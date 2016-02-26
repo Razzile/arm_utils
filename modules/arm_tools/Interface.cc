@@ -3,18 +3,13 @@
 #include <string>
 #include "ARMDisassembler.h"
 
-const char* ToCString(const v8::String::Utf8Value& value) {
-  return *value ? *value : "<string conversion failed>";
-}
-
 void ARM_Init(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
   ARMDisassembler ds;
 
-  v8::String::Utf8Value local(args[0]->ToString());
-  std::string str = ToCString(local);
-  std::string result = ds.Disassemble(0x0, std::stoul(str, nullptr, 16));
+  unsigned int hex = args[0]->NumberValue();
+  std::string result = ds.Disassemble(0x0, hex);
 
   args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, result.data()));
 }
