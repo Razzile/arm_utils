@@ -3,9 +3,9 @@
     {
         'target_name': 'ARM',
         'sources': [
-            '/modules/arm_tools/Interface.cc',
-            '/modules/arm_tools/ARMDisassembler.cc',
-            '/modules/arm_tools/Utils.cc'],
+            'modules/arm_tools/Interface.cc',
+            'modules/arm_tools/ARMDisassembler.cc',
+            'modules/arm_tools/Utils.cc'],
 
         'cflags': [
             '-std=c++11',
