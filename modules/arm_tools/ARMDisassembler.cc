@@ -359,5 +359,22 @@ std::string ARMDisassembler::DisassembleALU(Opcode opcode, uint32_t instr) {
 }
 
 Opcode ARMDisassembler::Decode(uint32_t instr) {
-    return Opcode::MOV;
+    // first 2 bits of opcode 1
+    uint32_t ophi = (instr >> 26) & 0x3;
+    switch (ophi) {
+        case 0x0: return Decode00(instr);
+        case 0x1: return Decode01(instr);
+        case 0x2: return Decode10(instr);
+        case 0x3: return Decode11(instr);
+    }
+    return Opcode::INVALID;
+}
+
+Opcode ARMDisassembler::Decode00(uint32_t instr) {
+    uint8_t bit25 = (instr >> 25) & 0x1; // low bit of op 1
+    uint8_t bit4 = (instr >> 4) & 0x1; // op (2)
+
+    if (bit25 == 0 && bit4 == 1) {
+        // TODO:
+    }
 }
