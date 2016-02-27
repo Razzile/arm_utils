@@ -149,25 +149,6 @@ inline namespace ARM {
         YIELD,
     };
 
-    static const char *cond_names[] = {
-        "eq",
-        "ne",
-        "cs",
-        "cc",
-        "mi",
-        "pl",
-        "vs",
-        "vc",
-        "hi",
-        "ls",
-        "ge",
-        "lt",
-        "gt",
-        "le",
-        "",
-        "RESERVED"
-    };
-
     static const char *opcode_names[] = {
         "invalid",
         "undefined",
@@ -347,6 +328,25 @@ inline namespace ARM {
         "tst",
 
         nullptr
+    };
+
+    static const char *cond_names[] = {
+        "eq",
+        "ne",
+        "cs",
+        "cc",
+        "mi",
+        "pl",
+        "vs",
+        "vc",
+        "hi",
+        "ls",
+        "ge",
+        "lt",
+        "gt",
+        "le",
+        "",
+        "RESERVED"
     };
 
     static const char *shift_names[] = {
