@@ -362,6 +362,12 @@ inline namespace ARM {
         Opcode Decode(uint32_t instr);
     private:
         std::string DisassembleALU(Opcode opcode, uint32_t instr);
+
+        Opcode Decode00(uint32_t instr);
+        Opcode Decode01(uint32_t instr);
+        Opcode Decode10(uint32_t instr);
+        Opcode Decode11(uint32_t instr);
+
     };
 
 } // ARM
