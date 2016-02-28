@@ -103,7 +103,7 @@ inline namespace ARM {
         STRH,
         STRT,
         SUB,
-        SWI,
+        SWI, //TODO: change to SVC?
         SWP,
         SWPB,
         SXTAB,
@@ -243,7 +243,7 @@ inline namespace ARM {
         "strh",
         "strt",
         "sub",
-        "swi",
+        "swi", //TODO: change to SVC?
         "swp",
         "swpb",
         "sxtab",
@@ -368,6 +368,12 @@ inline namespace ARM {
         Opcode Decode10(uint32_t instr);
         Opcode Decode11(uint32_t instr);
 
+        Opcode DecodeSyncPrimitive(uint32_t instr);
+        Opcode DecodeMUL(uint32_t instr);
+        Opcode DecodeLDRH(uint32_t instr);
+        Opcode DecodeMSRImmAndHints(uint32_t instr);
+        Opcode DecodeALU(uint32_t instr);
+        Opcode DecodeMedia(uint32_t instr);
     };
 
 } // ARM

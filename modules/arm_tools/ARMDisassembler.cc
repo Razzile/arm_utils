@@ -370,11 +370,188 @@ Opcode ARMDisassembler::Decode(uint32_t instr) {
     return Opcode::INVALID;
 }
 
+// Data-processing and misc. instructions (A5.2)
 Opcode ARMDisassembler::Decode00(uint32_t instr) {
-    uint8_t bit25 = (instr >> 25) & 0x1; // low bit of op 1
-    uint8_t bit4 = (instr >> 4) & 0x1; // op (2)
+    uint8_t op = (instr >> 25) & 0x1; // low bit of op 1
+    uint8_t op2lo = (instr >> 4) & 0x1; // op (2)
 
-    if (bit25 == 0 && bit4 == 1) {
-        // TODO:
+    if (op == 0 && op2lo == 1) {
+        if ((instr & 0xFFFFFFF0) == 0x012FFF10) {
+            // BX
+            return Opcode::BX;
+        }
+
+        if ((instr & 0xFF000F0) == 0x1600010) {
+            // CLZ
+            return Opcode::CLZ;
+        }
+
+        if ((instr & 0xFFF000F0) == 0xE1200070) {
+            // BKPT
+            return Opcode::BKPT;
+        }
+
+        // opcode 2
+        uint32_t op2 = (instr >> 4) & 0xF;
+        if (op2 == 0x9) {
+            uint8_t op1hi = (instr >> 24) & 0x1;
+
+            if (op1hi) {
+                return DecodeSyncPrimitive(instr);
+            }
+
+            return DecodeMUL(instr);
+        }
+
+        uint8_t op2hi = (instr >> 7) & 0x1;
+        if (op2hi) {
+            return DecodeLDRH(instr);
+        }
     }
+
+    uint32_t op1_full = (instr >> 20) & 0x1F;
+    if (op && (op1_full == 0x12 || op1_full == 0x16)) {
+        return DecodeMSRImmAndHints(instr);
+    }
+    return DecodeALU(instr);
+}
+
+// Load/store word and unsigned byte (A5.3)
+// TODO: finish these
+Opcode ARMDisassembler::Decode01(uint32_t instr) {
+    uint8_t A = (instr >> 25) & 0x1; // indicates if target is reg or imm
+    uint8_t B = (instr >> 4) & 0x1; // if B=1 and A=1, op is media instruction
+
+    if (A && B) {
+        return DecodeMedia(instr);
+    }
+
+    uint8_t is_load = (instr >> 20) & 0x1; // target is LDR type
+    uint8_t is_byte = (instr >> 22) & 0x1; // target is xxxB type
+
+    if ((instr & 0xFD70F000) == 0xF550F000) {
+        return Opcode::PLD;
+    }
+    // TODO: DMB, DSB and ISB may fit here (see A5.7.1)
+
+    if (instr == 0xF57FF01F) {
+        return Opcode::CLREX;
+    }
+
+    // LDRx
+    if (is_load) {
+        if (is_byte) {
+            return Opcode::LDRB;
+        }
+        return Opcode::LDR;
+    }
+    // STRx
+    else {
+        if (is_byte) {
+            return Opcode::STRB;
+        }
+        return Opcode::STR;
+    }
+}
+
+// branch, branch-link and block data transfer (A5.5)
+Opcode ARMDisassembler::Decode10(uint32_t instr) {
+    // TODO: most instructions here (A5.5)
+    uint8_t ophi = (instr >> 25) & 0x1;
+
+    // block data transfer instruction
+    if (ophi == 0) {
+        uint8_t is_load = (instr >> 20) & 0x1;
+        if (is_load) {
+            // TODO: LDM, LDMIA, LDMDA, LDMFA, LDMFD, LDMDB, LDMEA, LDMIB, LDMED, POP
+            return Opcode::LDC;
+        }
+        else {
+            // TODO: STM, STMDA, STMDB, STMIB, PUSH
+            return Opcode::STC;
+        }
+    }
+
+    // branch type
+    uint8_t is_link = (instr >> 24) & 0x1;
+    if (is_link) {
+        return Opcode::BL;
+    }
+    return Opcode::B;
+}
+
+// Coprocessor instructions and SVC (A5.6)
+Opcode ARMDisassembler::Decode11(uint32_t instr) {
+    uint8_t op1hi = (instr >> 25) & 0x1;
+    if (op1hi == 0) {
+        // LDC, STC
+        uint8_t is_load = (instr >> 20) & 0x1;
+
+        if (is_load) {
+            return Opcode::LDC;
+        }
+        else {
+            return Opcode::STC;
+        }
+    }
+
+    uint8_t is_swi = (instr >> 24) & 0x1;
+    if (is_swi) {
+        return Opcode::SWI;
+    }
+
+    uint8_t op = (instr >> 4) & 0x1;
+    uint8_t coprocessor_num = (instr >> 8) & 0x1;
+
+    // coprocessor 15 is special
+    if (coprocessor_num == 15) {
+        uint8_t opcode = (instr >> 21) & 0x7;
+        if (op == 0 || opcode != 0) {
+            // incorrect bit pattern
+            return Opcode::UNDEFINED;
+        }
+
+        uint8_t is_mrc = (instr >> 20) & 0x1;
+        if (is_mrc) {
+            return Opcode::MRC;
+        }
+        else {
+            return Opcode::MCR;
+        }
+    }
+    if (op == 0) {
+        return Opcode::CDP;
+    }
+
+    uint8_t is_mrc = (instr >> 20) & 0x1;
+    if (is_mrc) {
+        return Opcode::MRC;
+    }
+    else {
+        return Opcode::MCR;
+    }
+}
+
+Opcode ARMDisassembler::DecodeSyncPrimitive(uint32_t instr) {
+    return Opcode::INVALID; // TODO:
+}
+
+Opcode ARMDisassembler::DecodeMUL(uint32_t instr) {
+    return Opcode::INVALID; // TODO:
+}
+
+Opcode ARMDisassembler::DecodeLDRH(uint32_t instr) {
+    return Opcode::INVALID; // TODO:
+}
+
+Opcode ARMDisassembler::DecodeMSRImmAndHints(uint32_t instr) {
+    return Opcode::INVALID; // TODO:
+}
+
+Opcode ARMDisassembler::DecodeALU(uint32_t instr) {
+    return Opcode::INVALID; // TODO:
+}
+
+Opcode ARMDisassembler::DecodeMedia(uint32_t instr) {
+    return Opcode::INVALID; // TODO:
 }
